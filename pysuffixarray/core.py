@@ -1,70 +1,155 @@
+class SuffixArray:
 
+    def __init__(self, string):
+        self.string = string + '$'
+        self.sa = self._construct_suffix_array(self.string)
 
-def sort(suffix_array, rank_array, string_len, k):
-    max_length = max(2**7 - 1, string_len)
-    count = [0] * max_length
+    def suffix_array(self):
+        return self.sa
 
-    for i in range(len(rank_array)):
-        if i + k < string_len:
-            count[rank_array[i + k]] += 1
+    def match(self, pattern):
+        """Returns an array of the string index where the pattern occurs."""
+        pattern_len = len(pattern)
+
+        low, high = 0, len(self.string) - 1
+        while low < high:
+            mid = (low + high) // 2
+
+            suffix_index = self.sa[mid]
+            pattern_is_bigger = self.string[suffix_index:suffix_index+pattern_len] < pattern
+
+            if pattern_is_bigger:
+                low = mid + 1
+            else:
+                high = mid
+
+        if self.string[self.sa[low]:self.sa[low] + pattern_len] != pattern:
+            return (-1, -1)
         else:
-            count[0] += 1
+            lower_bound = low
 
-    cumsum = 0
-    for i in range(max_length):
-        t = count[i]
-        count[i] = cumsum
-        cumsum += t
+        low, high = 0, len(self.string) - 1
+        while low < high:
+            mid = (low + high) // 2
 
-    temp_suffix_array = [-1] * string_len
-    for i in range(len(suffix_array)):
-        if suffix_array[i] + k < string_len:
-            target_index = rank_array[suffix_array[i] + k]
-        else:
-            target_index = 0
+            suffix_index = self.sa[mid]
+            pattern_is_smaller = self.string[suffix_index:suffix_index+pattern_len] > pattern
 
-        temp_suffix_array[count[target_index]] = suffix_array[i]
-        count[target_index] += 1
+            if pattern_is_smaller:
+                high = mid
+            else:
+                low = mid + 1
 
-    return temp_suffix_array
+        if self.string[self.sa[high]:self.sa[high] + pattern_len] != pattern:
+            high -= 1
 
-def rerank(suffix_array, rank_array, k):
-    temp_rank_array = [0] * len(rank_array)
-    r, s = rank_array, suffix_array
+        upper_bound = high
 
-    rank = 0
-    for i in range(1, len(rank_array)):
-        if r[s[i]] == r[s[i-1]] and r[s[i] + k] == r[s[i-1] + k]:
-            temp_rank_array[s[i]] = rank
-        else:
-            rank += 1
-            temp_rank_array[s[i]] = rank
+        return list(sorted([self.sa[i] for i in range(lower_bound, upper_bound + 1)]))
 
-    return temp_rank_array
+    def longest_common_prefix(self):
+        """Returns an array of longest common prefix(LCP).
+        LCP[i] contains the length of common prefix between SA[i] and SA[i-1].
+        """
+        n = len(self.sa)
+        phi = [-1] * n
+        for i in range(1, n):
+            phi[self.sa[i]] = self.sa[i-1]
 
-def suffix_array(string):
-    string += '$'
+        l = 0
+        plcp = [0] * n
+        for i in range(n):
+            if phi[i] == -1:
+                continue
+            else:
+                while self.string[i + l] == self.string[phi[i] + l]:
+                    l += 1
+                plcp[i] = l
+                l = max(l-1, 0)
 
-    string_len = len(string)
-    suffix_array = list(range(string_len))
-    rank_array = [ord(c) for c in string]
+        return [plcp[self.sa[i]] for i in range(n)]
 
-    k = 1
-    while k < string_len:
-        suffix_array = sort(suffix_array, rank_array, string_len, k)
-        suffix_array = sort(suffix_array, rank_array, string_len, 0)
-        rank_array = rerank(suffix_array, rank_array, 1)
-        k *= 2
+    def longest_repeated_substring(self):
+        """Returns one of the longest repeated substrings within the string."""
+        # Find index and length of the longest repeated substring.
+        i, l = max(enumerate(self.longest_common_prefix()), key=lambda tup: tup[1])
+        return self.string[i:i+l]
 
-    return suffix_array
+    def _construct_suffix_array(self, string):
+        """Constructs suffix array in O(nlogn) time by sorting ranking pairs of suffixes."""
+        string_len = len(string)
+        suffix_array = list(range(string_len))
+        rank_array = [ord(c) for c in string]
 
-def random_char():
-    import random
-    return ['A', 'T', 'G', 'C'][random.randint(0, 3)]
+        k = 1
+        # This sorting process will be repeated at most log(n) times.
+        while k < string_len:
+            # At first, sort suffixes with the first elements of ranking pairs.
+            suffix_array = self._sort(suffix_array, rank_array, string_len, k)
+            # Next, sort suffixes with the second elements of ranking pairs.
+            suffix_array = self._sort(suffix_array, rank_array, string_len, 0)
+            # Recompute rank of suffixes.
+            rank_array = self._rerank(suffix_array, rank_array, 1)
+            k *= 2
+
+        return suffix_array
+
+    def _sort(self, suffix_array, rank_array, string_len, k):
+        """Sorts suffixes by count-sorting rank array. 
+        Offset k is defined such that the value used when sorting suffix i corresponds to rank_array[i + k].
+        """
+        max_length = max(2**7 - 1, string_len)
+        count = [0] * max_length
+
+        for i in range(len(rank_array)):
+            if i + k < string_len:
+                count[rank_array[i + k]] += 1
+            else:
+                count[0] += 1
+
+        cumsum = 0
+        for i in range(max_length):
+            t = count[i]
+            count[i] = cumsum
+            cumsum += t
+
+        temp_suffix_array = [-1] * string_len
+        for i in range(len(suffix_array)):
+            if suffix_array[i] + k < string_len:
+                target_index = rank_array[suffix_array[i] + k]
+            else:
+                target_index = 0
+
+            temp_suffix_array[count[target_index]] = suffix_array[i]
+            count[target_index] += 1
+
+        return temp_suffix_array
+
+    def _rerank(self, suffix_array, rank_array, k):
+        """Recomputes rank of suffixes. When consecutive suffixes with identical ranking pairs are found,
+        assigns same ranks to them.
+        """
+        temp_rank_array = [0] * len(rank_array)
+        r, s = rank_array, suffix_array
+
+        rank = 0
+        for i in range(1, len(rank_array)):
+            # When ranking pairs are identical, do not increment the rank.
+            if r[s[i]] == r[s[i-1]] and r[s[i] + k] == r[s[i-1] + k]:
+                temp_rank_array[s[i]] = rank
+            else:
+                rank += 1
+                temp_rank_array[s[i]] = rank
+
+        return temp_rank_array
 
 if __name__ == '__main__':
-    suffix_array = suffix_array(''.join([random_char() for _ in range(10**5)]))
-    # suffix_array = suffix_array('GATAGACA')
-    # print(suffix_array)
+    # suffix_array = SuffixArray(''.join([random_char() for _ in range(10**5)]))
+    suffix_array = SuffixArray('MISSISSIPPI')
+
+    print(suffix_array.suffix_array())
+    print(suffix_array.match('ISS'))
+    print(suffix_array.longest_common_prefix())
+    print(suffix_array.longest_repeated_substring())
 
 
