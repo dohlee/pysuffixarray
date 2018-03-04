@@ -1,4 +1,4 @@
-from core import SuffixArray
+from pysuffixarray.core import SuffixArray
 
 def match(string, pattern):
     return SuffixArray(string).match(pattern)

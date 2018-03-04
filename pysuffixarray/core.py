@@ -5,6 +5,7 @@ class SuffixArray:
         self.sa = self._construct_suffix_array(self.string)
 
     def suffix_array(self):
+        """Returns a suffix array."""
         return self.sa
 
     def match(self, pattern):
@@ -73,7 +74,7 @@ class SuffixArray:
         """Returns one of the longest repeated substrings within the string."""
         # Find index and length of the longest repeated substring.
         i, l = max(enumerate(self.longest_common_prefix()), key=lambda tup: tup[1])
-        return self.string[i:i+l]
+        return self.string[self.sa[i]:self.sa[i]+l]
 
     def _construct_suffix_array(self, string):
         """Constructs suffix array in O(nlogn) time by sorting ranking pairs of suffixes."""
@@ -89,7 +90,7 @@ class SuffixArray:
             # Next, sort suffixes with the second elements of ranking pairs.
             suffix_array = self._sort(suffix_array, rank_array, string_len, 0)
             # Recompute rank of suffixes.
-            rank_array = self._rerank(suffix_array, rank_array, 1)
+            rank_array = self._rerank(suffix_array, rank_array, k)
             k *= 2
 
         return suffix_array
@@ -142,14 +143,5 @@ class SuffixArray:
                 temp_rank_array[s[i]] = rank
 
         return temp_rank_array
-
-if __name__ == '__main__':
-    # suffix_array = SuffixArray(''.join([random_char() for _ in range(10**5)]))
-    suffix_array = SuffixArray('MISSISSIPPI')
-
-    print(suffix_array.suffix_array())
-    print(suffix_array.match('ISS'))
-    print(suffix_array.longest_common_prefix())
-    print(suffix_array.longest_repeated_substring())
 
 
