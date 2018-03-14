@@ -1,3 +1,5 @@
+from sais import construct_suffix_array
+
 class SuffixArray:
 
     def __init__(self, string):

@@ -1,0 +1,9 @@
+README.md
+setup.py
+pysuffixarray/__init__.py
+pysuffixarray/core.py
+pysuffixarray/util.py
+pysuffixarray.egg-info/PKG-INFO
+pysuffixarray.egg-info/SOURCES.txt
+pysuffixarray.egg-info/dependency_links.txt
+pysuffixarray.egg-info/top_level.txt
