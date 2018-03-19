@@ -12,6 +12,8 @@ def construct_suffix_array(string):
     print(sa)
     sa = s_type_induced_sorting(sa, buckets, es, ta)
 
+    summarized_array, original_indices = summarize(sa, es, ta)
+    print(summarized_array, original_indices)
     print(sa)
 
 def initialize_sa_with_lms_guess(buckets, string, ta):
@@ -25,7 +27,6 @@ def initialize_sa_with_lms_guess(buckets, string, ta):
             tails[c] -= 1
 
     return sa
-
 
 def l_type_induced_sorting(sa, buckets, string, ta):
     heads = get_bucket_heads(buckets)
@@ -54,6 +55,26 @@ def s_type_induced_sorting(sa, buckets, string, ta):
             tails[c] -= 1
 
     return sa
+
+def summarize(sa, string, ta):
+    summarized_array = [-1] * len(string)
+
+    summarized_array[len(string) - 1] = 0
+    last_lms_index = sa[0]
+    current_name = 1
+    for i, sa_entry in enumerate(sa[1:], 1):
+        if not is_lms_character(ta, sa_entry):
+            continue
+
+        if are_equal_lms_substrings(string, ta, last_lms_index, sa_entry):
+            summarized_array[sa_entry] = current_name
+        else:
+            summarized_array[sa_entry] = current_name
+            current_name += 1
+
+        last_lms_index = sa_entry
+
+    return [s for s in summarized_array if s != -1], [i for i, s in enumerate(summarized_array) if s != -1]
 
 def construct_type_array(string):
     type_array = ['S']
