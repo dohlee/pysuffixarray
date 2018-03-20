@@ -1,26 +1,27 @@
 def construct_suffix_array(string):
     ta = construct_type_array(string)
-    mapping = construct_alphabet_mapping(s)
-    es = encode_string(s, mapping)
-    print(es)
-
+    mapping = construct_alphabet_mapping(string)
+    es = encode_string(string, mapping)
     buckets = construct_buckets(es, mapping)
-    print(buckets)
+
     sa = initialize_sa_with_lms_guess(buckets, es, ta)
-    print(sa)
     sa = l_type_induced_sorting(sa, buckets, es, ta)
-    print(sa)
     sa = s_type_induced_sorting(sa, buckets, es, ta)
 
-    summarized_array, original_indices = summarize(sa, es, ta)
-    print(summarized_array, original_indices)
-    print(sa)
+    summarized_string, original_indices = summarize(sa, es, ta)
+    summarized_suffix_array = summary_suffix_array(summarized_string)
+
+    sa = final_lms_sort(es, buckets, ta, summarized_suffix_array, original_indices)
+    sa = l_type_induced_sorting(sa, buckets, es, ta)
+    sa = s_type_induced_sorting(sa, buckets, es, ta)
+    
+    return sa
 
 def initialize_sa_with_lms_guess(buckets, string, ta):
     sa = [-1] * len(string)
     tails = get_bucket_tails(buckets)
 
-    for i in range(len(sa) - 1, -1, -1):
+    for i in range(len(sa)):
         if is_lms_character(ta, i):
             c = string[i]
             sa[tails[c]] = i
@@ -59,7 +60,7 @@ def s_type_induced_sorting(sa, buckets, string, ta):
 def summarize(sa, string, ta):
     summarized_array = [-1] * len(string)
 
-    summarized_array[len(string) - 1] = 0
+    summarized_array[len(string) - 1] = 1
     last_lms_index = sa[0]
     current_name = 1
     for i, sa_entry in enumerate(sa[1:], 1):
@@ -69,12 +70,41 @@ def summarize(sa, string, ta):
         if are_equal_lms_substrings(string, ta, last_lms_index, sa_entry):
             summarized_array[sa_entry] = current_name
         else:
-            summarized_array[sa_entry] = current_name
             current_name += 1
-
+            summarized_array[sa_entry] = current_name
         last_lms_index = sa_entry
 
+    summarized_array.append(0)
+
     return [s for s in summarized_array if s != -1], [i for i, s in enumerate(summarized_array) if s != -1]
+
+def summary_suffix_array(summarized_string):
+    alphabet_size = len(set(summarized_string))
+    if alphabet_size == len(summarized_string):
+        # Bucket sorting.
+        summarized_suffix_array = [-1] * (len(summarized_string))
+
+        for i, c in enumerate(summarized_string):
+            summarized_suffix_array[c] = i
+
+    else:
+        summarized_suffix_array = construct_suffix_array(summarized_string)
+
+    return summarized_suffix_array
+
+def final_lms_sort(string, buckets, ta, summarized_suffix_array, original_indices):
+    sa = [-1] * len(string)
+    tails = get_bucket_tails(buckets)
+
+    for i in range(len(summarized_suffix_array) - 1, 0, -1):
+        index_at_string = original_indices[summarized_suffix_array[i]]
+
+        c = string[index_at_string]
+        sa[tails[c]] = index_at_string
+
+        tails[c] -= 1
+
+    return sa
 
 def construct_type_array(string):
     type_array = ['S']
@@ -135,16 +165,12 @@ def get_bucket_tails(buckets):
         tails.append(tails[-1] + bucket_size)
     return tails
 
+import random
+def random_character():
+    return ['A', 'C', 'G', 'T'][random.randint(0, 3)]
+
 if __name__ == '__main__':
-    s = 'cabbage$'
+    # s = 'cabbage$'
+    s = ''.join([random_character() for _ in range(1000000)]) + '$'
     sa = construct_suffix_array(s)
-     
-    type_array = construct_type_array(s)
-    mapping = construct_alphabet_mapping(s)
-    es = encode_string(s, mapping)
-    # print(construct_alphabet_mapping(s))
-    # print(encode_string(s, mapping))
-    # print(are_equal_lms_substrings(s, type_array, 1, 13))
-    buckets = construct_buckets(es, mapping)
-    # print(get_bucket_heads(buckets))
-    # print(get_bucket_tails(buckets))
+    # print(sa)

@@ -146,4 +146,10 @@ class SuffixArray:
 
         return temp_rank_array
 
+import random
+def random_character():
+    return ['A', 'C', 'G', 'T'][random.randint(0, 3)]
 
+if __name__ == '__main__':
+    s = ''.join([random_character() for _ in range(1000000)])
+    sa = SuffixArray(s)
